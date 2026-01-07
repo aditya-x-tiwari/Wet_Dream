@@ -1,2 +1,12 @@
 # Wet_Dream
-An innovative air-to-water generator that extracts clean drinking water from ambient air using condensation technology. Includes thermodynamic modeling, vapour-compression cycle analysis, and performance evaluation. Built with Python and CoolProp for property calculations and cycle simulations.
+Wet Dream is a proof-of-concept atmospheric water generator (AWG) designed to harvest water from ambient air, providing a sustainable source of drinking water. The project includes:
+
+Thermodynamic modeling of the vapour-compression refrigeration cycle
+
+Python scripts for calculating pressures, temperatures, enthalpies, and entropies at all key points in the cycle
+
+Coefficient of performance (COP) and efficiency analysis
+
+Potential for expansion to real-world air–water extraction prototypes
+
+This repository is intended for engineers, students, and hobbyists interested in renewable water generation and thermodynamic cycle simulation.
