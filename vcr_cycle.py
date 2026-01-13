@@ -1,5 +1,5 @@
 """
-air_water_refrigerator_sweep.py
+vcr_cycle.py
 
 What it does:
 - Fetches ambient temperature, pressure, and relative humidity from OpenWeatherMap (or fallback to manual input).
@@ -25,13 +25,19 @@ import numpy as np
 import pandas as pd
 import requests
 from CoolProp.CoolProp import PropsSI
+from dotenv import load_dotenv
+
 import psychrolib
 psychrolib.SetUnitSystem(psychrolib.SI)
 
 # -------- USER / API CONFIG ----------
 # Option A: use OpenWeatherMap (recommended)
 # Get your API key from https://openweathermap.org/api (Current Weather Data)
-OWM_API_KEY = "ea2f8d2567dgfd4005afce2bba61f5916ca8" # or set here as string
+load_dotenv()  # loads variables from .env
+OWM_API_KEY = os.getenv("OWM_API_KEY") # not exposing api key directly as it's confidential.
+if not OWM_API_KEY:
+    print("⚠️ No OpenWeatherMap API key found in environment variables.")
+
 
 # Provide location: either (lat, lon) tuple or city name string
 # Examples:
@@ -44,7 +50,7 @@ LOCATION = ("22.5726", "88.3639")
 
 # -------- PHYSICAL / DESIGN DEFAULTS (editable) ----------
 refrigerant = "R134a"
-# Temperatures offsets (°C)
+# Temperatures offsets (°C) these are usually determined based on the model
 EVAP_DEW_OFFSET = -10.0     # T_evap_air = dew_point + EVAP_DEW_OFFSET (note: offset is negative here)
 COND_AMB_OFFSET = +3.0      # T_cond = T_ambient + COND_AMB_OFFSET
 
@@ -58,13 +64,13 @@ def estimate_isentropic_efficiency(pressure_ratio):
     eta = 0.78 - 0.03 * max(0, (pressure_ratio - 2.0))
     return float(np.clip(eta, 0.60, 0.85))
 
-# Sweep parameters (dry-air mass flow in kg/s)
+# Sweep parameters (dry-air mass flow in kg/s) ranges of mass flow rates that are possibly optimal
 m_dot_da_start = 0.1
 m_dot_da_stop  = 5.0
 m_dot_da_step  = 0.1
 
 # Electricity cost (optional) for energy-per-hour metrics
-ELECTRICITY_RATE_PER_KWH = 0.0  # INR per kWh (set if desired)
+ELECTRICITY_RATE_PER_KWH = 10.0  # INR per kWh (set if desired)
 
 # ------------------------------------
 
@@ -133,8 +139,8 @@ def run_simulation(location=LOCATION, api_key=OWM_API_KEY):
     T_cond_R_K = T_cond_C + 273.15
 
     # Refrigerant pressures (saturation)
-    P_evap = PropsSI("P", "T", T_evap_R_K, "Q", 1.0, refrigerant)
-    P_cond = PropsSI("P", "T", T_cond_R_K, "Q", 0.0, refrigerant)
+    P_evap = PropsSI("P", "T", T_evap_R_K, "Q", 1.0, refrigerant) # dryness fraction is used 1.0 for evaporater
+    P_cond = PropsSI("P", "T", T_cond_R_K, "Q", 0.0, refrigerant) # dryness fraction is used 0.0 for condenser
 
     # Refrigerant states that do not depend on mass flow
     # State 1: saturated vapor at evaporator (outlet of evaporator)
@@ -148,7 +154,8 @@ def run_simulation(location=LOCATION, api_key=OWM_API_KEY):
     h4 = h3
 
     # Preparation of sweep
-    m_vals = np.arange(m_dot_da_start, m_dot_da_stop + 1e-9, m_dot_da_step)
+    # Preparation of sweep (rounded to avoid floating-point drift)
+    m_vals = np.round( np.arange(m_dot_da_start, m_dot_da_stop, m_dot_da_step), 2)
     results = []
 
     for m_da in m_vals:
@@ -232,7 +239,7 @@ def run_simulation(location=LOCATION, api_key=OWM_API_KEY):
     df = pd.DataFrame(results)
     # Save CSV
     out_name = "air_water_refrigerator_sweep_results.csv"
-    df.to_csv(out_name, index=False)
+    df.to_csv(out_name, index=False, float_format="%.4f")
     print(f"Saved results to {out_name}")
 
     # Pick best mass flow by water per kWh (descending)
