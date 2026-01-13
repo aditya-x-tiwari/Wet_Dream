@@ -31,7 +31,7 @@ psychrolib.SetUnitSystem(psychrolib.SI)
 # -------- USER / API CONFIG ----------
 # Option A: use OpenWeatherMap (recommended)
 # Get your API key from https://openweathermap.org/api (Current Weather Data)
-OWM_API_KEY = "ea2f8d25674005afce2bba61f5916ca8" # or set here as string
+OWM_API_KEY = "ea2f8d2567dgfd4005afce2bba61f5916ca8" # or set here as string
 
 # Provide location: either (lat, lon) tuple or city name string
 # Examples:
