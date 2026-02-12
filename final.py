@@ -26,9 +26,6 @@ What it does:
 - Finally all of the data is made to be visualised for laymans and thus the program comes to end doing its job. 
 
 
-
-
-
 Assumptions (editable in code):
 - Evaporator refrigerant saturation temperature = (dew_point - 10°C)
 - Condenser refrigerant saturation temperature = (T_ambient + 3°C)
@@ -50,7 +47,9 @@ import psychrolib
 psychrolib.SetUnitSystem(psychrolib.SI)
 
 # ---------------- USER INPUTS ----------------
+load_dotenv()
 OWM_API_KEY = os.getenv("OWM_API_KEY") # not exposing api key directly as it's confidential.
+print(OWM_API_KEY)
 if not OWM_API_KEY:
     print("⚠️ No OpenWeatherMap API key found in environment variables.")
 
@@ -69,7 +68,7 @@ EVAP_DEW_OFFSET = -10.0     # T_evap_air = dew_point + EVAP_DEW_OFFSET (note: of
 COND_AMB_OFFSET = +3.0      # T_cond = T_ambient + COND_AMB_OFFSET
 
 # ---- Sweep refrigerant mass flow ----
-m_ref_vals = np.arange(0.001, 0.2, 0.002)
+m_ref_vals = np.round(np.arange(0.1, 20.1, 0.1),1)
 
 
 # Heat exchanger assumptions
@@ -77,8 +76,9 @@ U = 80.0       # W/m2-K # this contains a lot of other variables under considera
 A = 1.0        # m2 # this also involve complexities like it will be cross sectional area of fin that is circle with r as radius * no.of evaporator tubes in each fin *2 (two sides of fin * number of total fins in one evaporator * number of evaporaters
 L_vap = 2.45e6  # J/kg latent heat of vapourization of water its a constant
 D_tube = 0.01
-flow_area = 0.5
-N_tubes= 10
+N_evaporator= 1 # number of evaporator in parallel
+A_tube=(np.pi * D_tube**2 / 4) * N_evaporator   # total internal flow area
+
 
 # Air properties
 mu_air = 1.8e-5
@@ -180,7 +180,8 @@ def run():
     h2 = h1 + (h2s - h1) / eta
 
     q_evap = h1 - h4
-
+    mu_ref = PropsSI("V", "T", T_evap_K, "Q", 1, refrigerant)   # Dynamic viscosity of refrigerant at evaporator condition
+    
     results = []
 
 
@@ -188,7 +189,8 @@ def run():
     # ---- Air-side required load ----
 
     # Reynolds number
-    velocity = m_da / (rho_air * flow_area)
+    mu_air = PropsSI("V", "T", (T_amb+273), "P", P_amb, 'Air') 
+    velocity = m_da / (rho_air * A_tube)
     Re = rho_air * velocity * D_tube / mu_air
     regime = "Laminar" if Re < 2300 else "Transitional" if Re < 4000 else "Turbulent"
     # --- Air side heat transfer (for future use) ---
@@ -203,28 +205,23 @@ def run():
     h_air = Nu * k_air / D_tube
 
 
-    cp_moist = 1005 + omega_in * 1860
+    cp_moist = 1005 + omega_in * 1860 # taken as dry air + water vapour 
     T_target = T_dew - 5
 
     Q_s = m_da * cp_moist * (T_amb - T_target)
     water = m_da * (omega_in - omega_out)
     Q_l = water * L_vap
     Q_required = Q_s + Q_l
-
     C_air = m_da * cp_moist
     NTU = U * A / C_air
     eps = 1 - np.exp(-NTU)
-    Q_max = C_air * (T_amb - T_evap_air)
-    Q_HX = eps * Q_max
-
-    
 
     results = []
 
     for m_ref in m_ref_vals:
 
         Q_ref = m_ref * q_evap
-        Q_actual = min(Q_ref, Q_HX)
+        Q_actual = eps * Q_ref
 
         W_comp = m_ref * (h2 - h1)
         COP = Q_actual / W_comp if W_comp > 0 else np.nan
@@ -238,19 +235,17 @@ def run():
         water_per_kWh = water_hr / (W_comp / 1000) if W_comp > 0 else np.nan
 
         # Reynolds number for refrigerant(inside evaporator tubes) ---
-        A_ref = (np.pi * D_tube**2 / 4) * N_tubes   # total internal flow area
-        mu_ref = PropsSI("V", "T", T_evap_K, "Q", 1, refrigerant)   # Dynamic viscosity of refrigerant at evaporator condition
-        Re_ref = m_ref * D_ref / (mu_ref * A_ref)
+        Re_ref = m_ref * D_tube / (mu_ref * A_tube)
         regime_ref = "Laminar" if Re < 2300 else "Transitional" if Re < 4000 else "Turbulent"
         
 
-        results.append([m_ref, Q_actual, m_ref, W_comp,
-                            COP, error, water_hr, water_per_kWh,
-                            NTU, eps, Re, regime])
+        results.append([m_ref, m_da, Q_actual, Q_required, error, water_hr, water_per_kWh,
+                            NTU, eps,W_comp,
+                            COP, Re_ref, regime_ref])
 
-        cols = ["m_da", "Q_W", "m_ref", "W_comp",
-                "COP", "Error", "water_kg_hr", "water_kg_per_kWh",
-                "NTU", "effectiveness", "Re", "flow_regime"]
+        cols = ["m_ref", "m_da", "Q_W", "Q_required", "Error", "water_kg_hr", "water_kg_per_kWh",
+                "NTU", "effectiveness", "W_comp",
+                "COP", "Re", "flow_regime"]
     
 
     df = pd.DataFrame(results, columns=cols)
@@ -275,4 +270,3 @@ if __name__ == "__main__":
     print(f"Compressor Power: {best['W_comp']:.2f} W")
     print(f"COP: {best['COP']:.2f}")
     print(f"Water production: {best['water_kg_hr']:.2f} kg/hr")
-
