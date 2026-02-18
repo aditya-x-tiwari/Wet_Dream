@@ -19,10 +19,35 @@ jobs:
       with:
         python-version: '3.9'  # You can specify any Python version you need, such as '3.8' or '3.10'
 
+    - name: Monitor RAM and CPU usage
+      run: |
+        echo "Initial Memory and CPU usage:"
+        free -h  # Shows memory usage
+        top -n 1  # Shows CPU usage
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt  # This installs the dependencies listed in requirements.txt
 
+
+    - name: Monitor RAM and CPU usage after install
+      run: |
+        echo "Memory and CPU usage after installation:"
+        free -h
+        top -n 1
+
+
     - name: Run Python script
+      env:
+       OWM_API_KEY: ${{ secrets.OWM_API_KEY }} 
       run: python final.py  # Replace 'your_script.py' with the name of your Python script
+
+      
+    - name: Monitor RAM and CPU usage after running script
+      run: |
+        echo "Memory and CPU usage after running the script:"
+        free -h
+        top -n 1
+
+      
