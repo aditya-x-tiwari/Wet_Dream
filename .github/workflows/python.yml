@@ -1,0 +1,28 @@
+name: Run Python Script
+
+on:
+  push:
+    branches:
+      - main  # Change this to your target branch, e.g., "main" or "master"
+  workflow_dispatch:  # This allows you to manually trigger the workflow from the GitHub UI
+
+jobs:
+  run-python-script:
+    runs-on: ubuntu-latest  # Specify the virtual environment (Ubuntu in this case)
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3  # This checks out your code from the GitHub repository
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'  # You can specify any Python version you need, such as '3.8' or '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt  # This installs the dependencies listed in requirements.txt
+
+    - name: Run Python script
+      run: python final.py  # Replace 'your_script.py' with the name of your Python script
