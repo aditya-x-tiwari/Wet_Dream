@@ -8,13 +8,3 @@ Wet Dream is a proof-of-concept atmospheric water generator (AWG) designed to ha
 
 This repository is intended for engineers, students, and hobbyists interested in renewable water generation and thermodynamic cycle simulation.
 
-"""
-Advanced AWG Model with NTU-based Evaporator
-Includes:
-- Weather fetch
-- Psychrometrics
-- NTU-effectiveness evaporator model
-- Full R134a cycle
-- Airflow Reynolds check
-- Parametric sweep
-"""
