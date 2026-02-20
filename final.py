@@ -117,21 +117,21 @@ def fetch_weather():
 
     try:
       # Function to read values from the CSV file
-    filename='input_data.csv'
-    with open(filename, mode='r') as file:
-        # Use csv.reader to read the content
-        reader = csv.DictReader(file)
-        # We can use next(reader) to get the first row, and then the second row
-       next(reader)  # Skip the header row
-
-       # Read the second row
-       row = next(reader)  # This gets the second row (if there's more than one)
-        for row in reader:
-            # Extract values from the CSV
-            T = float(row['Ambient Temperature (°C)'])
-            P = float(row['Ambient Pressure (Pa)'])
-            RH = float(row['Relative Humidity (0–1)'])
-            return T, P, RH  # Return the extracted values
+       filename='input_data.csv'
+       with open(filename, mode='r') as file:
+           # Use csv.reader to read the content
+           reader = csv.DictReader(file)
+           # We can use next(reader) to get the first row, and then the second row
+          next(reader)  # Skip the header row
+   
+          # Read the second row
+          row = next(reader)  # This gets the second row (if there's more than one)
+           for row in reader:
+               # Extract values from the CSV
+               T = float(row['Ambient Temperature (°C)'])
+               P = float(row['Ambient Pressure (Pa)'])
+               RH = float(row['Relative Humidity (0–1)'])
+               return T, P, RH  # Return the extracted values
 
 
     except:
