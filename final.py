@@ -97,17 +97,23 @@ def fetch_weather():
     if OWM_API_KEY:
         try:
             base = "https://api.openweathermap.org/data/2.5/weather"
-            params = {"lat": LOCATION[0], "lon": LOCATION[1],
-                      "appid": OWM_API_KEY, "units": "metric"}
+            params = {
+                "lat": LOCATION[0],
+                "lon": LOCATION[1],
+                "appid": OWM_API_KEY,
+                "units": "metric"
+            }
             r = requests.get(base, params=params, timeout=10)
             r.raise_for_status()
             data = r.json()
 
             print("Weather fetched from OpenWeatherMap.")
 
-            return (float(data["main"]["temp"]),
-                    float(data["main"]["pressure"]) * 100,
-                    float(data["main"]["humidity"]) / 100)
+            return (
+                float(data["main"]["temp"]),
+                float(data["main"]["pressure"]) * 100,
+                float(data["main"]["humidity"]) / 100
+            )
 
         except Exception as e:
             print("API fetch failed:", e)
@@ -116,31 +122,24 @@ def fetch_weather():
     print("\nUsing manual weather input.")
 
     try:
-      # Function to read values from the CSV file
-       filename='input_data.csv'
-       with open(filename, mode='r') as file:
-           # Use csv.reader to read the content
-           reader = csv.DictReader(file)
-           # We can use next(reader) to get the first row, and then the second row
-          next(reader)  # Skip the header row
-   
-          # Read the second row
-          row = next(reader)  # This gets the second row (if there's more than one)
-           for row in reader:
-               # Extract values from the CSV
-               T = float(row['Ambient Temperature (°C)'])
-               P = float(row['Ambient Pressure (Pa)'])
-               RH = float(row['Relative Humidity (0–1)'])
-               return T, P, RH  # Return the extracted values
+        filename = 'input_data.csv'
 
+        with open(filename, mode='r') as file:
+            reader = csv.DictReader(file)
 
-    except:
+            # Skip header row (not needed for DictReader actually)
+            # next(reader)
+
+            for row in reader:
+                T = float(row['Ambient Temperature (°C)'])
+                P = float(row['Ambient Pressure (Pa)'])
+                RH = float(row['Relative Humidity (0–1)'])
+                return T, P, RH
+
+    except Exception:
         print("Input failed — using safe default values.")
         # Default: Kolkata typical summer
         return 32.0, 101325.0, 0.7
-
-
-
 def isentropic_eff(PR):
     return np.clip(0.78 - 0.03 * max(0, PR - 2), 0.6, 0.85)
 
