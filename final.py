@@ -80,9 +80,7 @@ N_evaporator= 1 # number of evaporator in parallel
 A_tube=(np.pi * D_tube**2 / 4) * N_evaporator   # total internal flow area
 
 
-# Air properties
-mu_air = 1.8e-5
-m_da = 2.0  # fixed air mass flow
+
 
 # ------------------------------------------------
 
@@ -167,6 +165,15 @@ def run():
 
     cp_moist = 1005 + omega_in * 1860
     rho_air = psychrolib.GetMoistAirDensity(T_amb, omega_in, P_amb)
+
+    print("density of air", rho_air)
+
+    # Air properties
+    mu_air = 1.8e-5
+    air_speed = 2.0
+    # m_da = 0.1 # fixed air mass flow
+    m_da = np.round((rho_air * air_speed * 0.1),2) # mass flow of dry air based on velocity and area
+
 
     # Refrigerant side states
     T_evap_K = T_evap_air + 273.15
